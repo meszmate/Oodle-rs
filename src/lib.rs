@@ -1,5 +1,4 @@
 use libloading::{Library, Symbol};
-use std::error::Error;
 use std::ffi::c_void;
 
 #[repr(C)]
@@ -98,7 +97,7 @@ struct OodleFunc {
 }
 
 impl OodleFunc {
-    pub fn load(lib: &'static Library) -> Result<Self, Box<dyn Error>> {
+    pub fn load(lib: &'static Library) -> Result<Self, libloading::Error> {
         unsafe {
             Ok(Self {
                 compress: lib.get(b"OodleLZ_Compress")?,
@@ -115,11 +114,17 @@ pub struct Oodle {
     funcs: OodleFunc,
 }
 
+pub enum Error {
+    LibLoadError(libloading::Error),
+    FunctionLoadError(libloading::Error),
+}
+
 impl Oodle {
-    pub fn load(path: &str) -> Result<Self, Box<dyn Error>> {
-        // Leak the library to get a 'static lifetime
-        let lib = Box::leak(Box::new(unsafe { Library::new(path)? }));
-        let funcs = OodleFunc::load(lib)?;
+    pub fn load(path: &str) -> Result<Self, Error> {
+        let lib = Box::leak(Box::new(unsafe {
+            Library::new(path).map_err(Error::LibLoadError)?
+        }));
+        let funcs = OodleFunc::load(lib).map_err(Error::FunctionLoadError)?;
         Ok(Self { _lib: lib, funcs })
     }
 
