@@ -90,6 +90,7 @@ type DecompressFn = unsafe extern "C" fn(
 type GetCompressedBufferSizeNeededFn =
     unsafe extern "C" fn(compressor: OodleCompressor, input_size: usize, options: usize) -> usize;
 
+#[derive(Debug, Clone)]
 struct OodleFunc {
     pub compress: Symbol<'static, CompressFn>,
     pub decompress: Symbol<'static, DecompressFn>,
@@ -109,11 +110,13 @@ impl OodleFunc {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Oodle {
     _lib: &'static Library,
     funcs: OodleFunc,
 }
 
+#[derive(Debug)]
 pub enum Error {
     LibLoadError(libloading::Error),
     FunctionLoadError(libloading::Error),
